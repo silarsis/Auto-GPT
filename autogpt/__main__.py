@@ -469,7 +469,9 @@ class Agent:
 
             # Convert the response to something structured _once_
             assistant_reply_json = convert_assistant_thoughts_to_json(assistant_reply)
-
+            
+            # TODO: Here, we should feedback to the agent if the json wasn't parseable. Need to tweak the prompts tho.
+            
             # Print Assistant thoughts
             print_assistant_thoughts(assistant_reply_json)
 
