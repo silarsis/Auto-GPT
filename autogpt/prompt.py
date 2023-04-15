@@ -26,6 +26,10 @@ def get_prompt() -> str:
     prompt_generator.add_constraint(
         'Exclusively use the commands listed in double quotes e.g. "command name"'
     )
+    
+    prompt_generator.add_constraint(
+        "Do not ask a GPT agent to do anything that requires web browsing or file access"
+    )
 
     # Define the command list
     commands = [
@@ -103,6 +107,7 @@ def get_prompt() -> str:
         "Every command has a cost, so be smart and efficient. Aim to complete tasks in"
         " the least number of steps."
     )
+
 
     # Generate the prompt string
     return prompt_generator.generate_prompt_string()
