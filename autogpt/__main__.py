@@ -68,6 +68,14 @@ def attempt_to_fix_json_by_finding_outermost_brackets(json_string: str) -> str:
 
 def convert_assistant_thoughts_to_json(input: str) -> dict:
     " Take assistant thoughts and do our best to make them consistent "
+    thoughts = {
+        "text": "thought",
+        "reasoning": "reasoning",
+        "plan": "- short bulleted\n- list that conveys\n- long-term plan",
+        "criticism": "constructive self-criticism",
+        "speak": "thoughts summary to say to user",
+    }
+    command = {"name": "command name", "args": {"arg name": "value"}}
     try:
         # Simplest attempt first
         assistant_reply_json = fix_and_parse_json(input)
@@ -82,16 +90,25 @@ def convert_assistant_thoughts_to_json(input: str) -> dict:
     if isinstance(assistant_reply_json, str):
         logger.error("Error: Invalid JSON\n", input)
         return {}
-    return assistant_reply_json
+    try:
+        thoughts['text'] = assistant_reply_json.get('thoughts', {}).get('text', '')
+        thoughts['reasoning'] = assistant_reply_json.get('thoughts', {}).get('reasoning', '')
+        thoughts['plan'] = assistant_reply_json.get('thoughts', {}).get('plan', '')
+        thoughts['criticism'] = assistant_reply_json.get('thoughts', {}).get('criticism', '')
+        thoughts['speak'] = assistant_reply_json.get('thoughts', {}).get('speak', '')
+        command['name'] = assistant_reply_json.get('command', {}).get('name', '')
+        command['args'] = assistant_reply_json.get('command', {}).get('args', {})
+    except Exception as e:
+        logging.error("Error: JSON is _almost_ right...", input, e)
+        return {}
+    return {'thoughts': thoughts, 'command': command}
 
 
-def print_assistant_thoughts(assistant_reply):
+def print_assistant_thoughts(assistant_reply_json: dict):
     """Prints the assistant's thoughts to the console"""
     global ai_name
     global cfg
     try:
-        assistant_reply_json = convert_assistant_thoughts_to_json(assistant_reply)
-
         assistant_thoughts_reasoning = None
         assistant_thoughts_plan = None
         assistant_thoughts_speak = None
@@ -450,14 +467,15 @@ class Agent:
                     cfg.fast_token_limit,
                 )  # TODO: This hardcodes the model to use GPT3.5. Make this an argument
 
+            # Convert the response to something structured _once_
+            assistant_reply_json = convert_assistant_thoughts_to_json(assistant_reply)
+
             # Print Assistant thoughts
-            print_assistant_thoughts(assistant_reply)
+            print_assistant_thoughts(assistant_reply_json)
 
             # Get command name and arguments
             try:
-                command_name, arguments = cmd.get_command(
-                    attempt_to_fix_json_by_finding_outermost_brackets(assistant_reply)
-                )
+                command_name, arguments = assistant_reply_json['command']['name'], assistant_reply_json['command']['args']
                 if cfg.speak_mode:
                     speak.say_text(f"I want to execute {command_name}")
             except Exception as e:
