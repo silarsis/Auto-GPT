@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.options import Options
 import logging
 from pathlib import Path
 from autogpt.config import Config
+from tempfile import mkdtemp
 
 file_dir = Path(__file__).parent
 cfg = Config()
@@ -24,7 +25,7 @@ def browse_website(url, question):
     if len(links) > 5:
         links = links[:5]
     close_browser(driver)
-    return f"Answer gathered from website: {summary_text} \n \n Links: {links}", driver
+    return f"Answer gathered from website: {summary_text} \n \n Links: {links}"
 
 
 def scrape_text_with_selenium(url):
@@ -34,6 +35,18 @@ def scrape_text_with_selenium(url):
     options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.49 Safari/537.36"
     )
+    options.add_argument("--remote-debugging-port=9222")
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1280x1696")
+    options.add_argument("--single-process")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-dev-tools")
+    options.add_argument("--no-zygote")
+    options.add_argument(f"--user-data-dir={mkdtemp()}")
+    options.add_argument(f"--data-path={mkdtemp()}")
+    options.add_argument(f"--disk-cache-dir={mkdtemp()}")
     driver = webdriver.Chrome(
         executable_path=ChromeDriverManager().install(), options=options
     )

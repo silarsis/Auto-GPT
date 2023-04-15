@@ -12,6 +12,9 @@ WORKDIR /home/appuser
 RUN chown appuser:appuser /home/appuser
 USER appuser
 
+# OS-level requirements
+RUN sudo apt-get update -y && apt-get install -y chromium-driver
+
 # Copy the requirements.txt file and install the requirements
 COPY --chown=appuser:appuser requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
