@@ -30,7 +30,7 @@ def check_openai_api_key():
         exit(1)
 
 
-def attempt_to_fix_json_by_finding_outermost_brackets(json_string):
+def attempt_to_fix_json_by_finding_outermost_brackets(json_string: str) -> str:
     if cfg.speak_mode and cfg.debug_mode:
         speak.say_text(
             "I have received an invalid JSON response from the OpenAI API. "
@@ -62,9 +62,27 @@ def attempt_to_fix_json_by_finding_outermost_brackets(json_string):
         if cfg.speak_mode:
             speak.say_text("Didn't work. I will have to ignore this response then.")
         logger.error("Error: Invalid JSON, setting it to empty JSON now.\n")
-        json_string = {}
+        json_string = '{}'
 
     return json_string
+
+def convert_assistant_thoughts_to_json(input: str) -> dict:
+    " Take assistant thoughts and do our best to make them consistent "
+    try:
+        # Simplest attempt first
+        assistant_reply_json = fix_and_parse_json(input)
+    except json.JSONDecodeError as e:
+        logger.error("Error: Invalid JSON in assistant thoughts\n", input)
+        assistant_reply_json = attempt_to_fix_json_by_finding_outermost_brackets(
+            input
+        )
+        assistant_reply_json = fix_and_parse_json(assistant_reply_json)
+    
+    # Check if assistant_reply_json is a string and give up if so here
+    if isinstance(assistant_reply_json, str):
+        logger.error("Error: Invalid JSON\n", input)
+        return {}
+    return assistant_reply_json
 
 
 def print_assistant_thoughts(assistant_reply):
@@ -72,28 +90,7 @@ def print_assistant_thoughts(assistant_reply):
     global ai_name
     global cfg
     try:
-        try:
-            # Parse and print Assistant response
-            assistant_reply_json = fix_and_parse_json(assistant_reply)
-        except json.JSONDecodeError as e:
-            logger.error("Error: Invalid JSON in assistant thoughts\n", assistant_reply)
-            assistant_reply_json = attempt_to_fix_json_by_finding_outermost_brackets(
-                assistant_reply
-            )
-            assistant_reply_json = fix_and_parse_json(assistant_reply_json)
-
-        # Check if assistant_reply_json is a string and attempt to parse it into a
-        #  JSON object
-        if isinstance(assistant_reply_json, str):
-            try:
-                assistant_reply_json = json.loads(assistant_reply_json)
-            except json.JSONDecodeError as e:
-                logger.error("Error: Invalid JSON\n", assistant_reply)
-                assistant_reply_json = (
-                    attempt_to_fix_json_by_finding_outermost_brackets(
-                        assistant_reply_json
-                    )
-                )
+        assistant_reply_json = convert_assistant_thoughts_to_json(assistant_reply)
 
         assistant_thoughts_reasoning = None
         assistant_thoughts_plan = None
@@ -466,7 +463,7 @@ class Agent:
             except Exception as e:
                 logger.error("Error: \n", str(e))
 
-            if not cfg.continuous_mode and self.next_action_count == 0:
+            if (not cfg.continuous_mode and self.next_action_count == 0) or command_name == 'do_nothing':
                 ### GET USER AUTHORIZATION TO EXECUTE COMMAND ###
                 # Get key press: Prompt the user to press enter to continue or escape
                 # to exit
