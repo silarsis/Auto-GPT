@@ -61,21 +61,20 @@ def fix_and_parse_json(
     except json.JSONDecodeError as e:  # noqa: F841
         if not try_to_fix_with_gpt:
             raise e
-    if try_to_fix_with_gpt:
-        print("Warning: Failed to parse AI output, attempting to fix."
-                "\n If you see this warning frequently, it's likely that"
-                " your prompt is confusing the AI. Try changing it up"
-                " slightly.")
-        # Now try to fix this up using the ai_functions
-        ai_fixed_json = fix_json(json_str, JSON_SCHEMA)
+    print("Warning: Failed to parse AI output, attempting to fix."
+            "\n If you see this warning frequently, it's likely that"
+            " your prompt is confusing the AI. Try changing it up"
+            " slightly.")
+    # Now try to fix this up using the ai_functions
+    ai_fixed_json = fix_json(json_str, JSON_SCHEMA)
 
-        if ai_fixed_json != "failed":
-            return json.loads(ai_fixed_json)
-        else:
-            # This allows the AI to react to the error message,
-            #   which usually results in it correcting its ways.
-            print("Failed to fix ai output, telling the AI.")
-            return json_str
+    if ai_fixed_json != "failed":
+        return json.loads(ai_fixed_json)
+    else:
+        # This allows the AI to react to the error message,
+        #   which usually results in it correcting its ways.
+        print("Failed to fix ai output, telling the AI.")
+        return json_str
         
 def fix_json(json_str: str, schema: str) -> str:
     """Fix the given JSON string to make it parseable and fully compliant with the provided schema."""
